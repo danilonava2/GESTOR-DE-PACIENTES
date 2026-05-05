@@ -1,0 +1,102 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; }
+
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 260px;
+  background: #1e2937;
+  color: white;
+  padding: 20px;
+  position: fixed;
+  height: 100%;
+}
+
+.logo h1 { font-size: 28px; color: #60a5fa; }
+.logo p { color: #94a3b8; font-size: 14px; }
+
+.menu-item {
+  display: block; padding: 12px 15px; color: #cbd5e1; text-decoration: none;
+  border-radius: 8px; margin: 6px 0;
+}
+.menu-item:hover, .menu-item.active { background: #334155; color: white; }
+
+.main-content { margin-left: 260px; padding: 30px; width: 100%; }
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+label { display: block; margin-bottom: 6px; font-weight: 600; color: #475569; }
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 15px;
+}
+.btn-primary:hover { background: #2563eb; }
+
+.btn-secondary {
+  background: #64748b;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.search-bar { display: flex; gap: 10px; margin-bottom: 15px; }
+.search-bar input { flex: 1; }
+
+.date-range { display: flex; gap: 10px; margin-bottom: 20px; }
+
+.tabla-resultados {
+  width: 100%; border-collapse: collapse; margin-top: 15px;
+  background: white; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.tabla-resultados th {
+  background: #1e40af; color: white; padding: 14px 10px; text-align: left;
+}
+.tabla-resultados td {
+  padding: 12px 10px; border-bottom: 1px solid #e2e8f0;
+}
+.tabla-resultados tr:hover { background: #f8fafc; }
+
+.section { display: none; }
+.section.active { display: block; }
+
+.modal {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%; background: rgba(0,0,0,0.6);
+  z-index: 1000; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: white; padding: 30px; border-radius: 12px;
+  text-align: center; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
