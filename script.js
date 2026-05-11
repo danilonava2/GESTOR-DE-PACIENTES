@@ -89,10 +89,23 @@ function login() {
 function register() {
   const email = document.getElementById('emailInput').value.trim();
   const password = document.getElementById('passwordInput').value;
-  if (!email || password.length < 6) return alert("La contraseña debe tener al menos 6 caracteres");
+
+  if (!email || password.length < 6) {
+    return alert("El correo es obligatorio y la contraseña debe tener al menos 6 caracteres");
+  }
+
+  // Protección con clave de administrador
+  const clave = prompt("🔑 Ingresa la clave de administrador para crear una nueva cuenta:");
+  if (clave !== "Adm123") {
+    return alert("❌ Clave de administrador incorrecta. Solo el administrador puede crear cuentas.");
+  }
+
   auth.createUserWithEmailAndPassword(email, password)
-    .then(() => { alert("✅ Cuenta creada correctamente"); login(); })
-    .catch(err => alert("Error: " + err.message));
+    .then(() => {
+      alert("✅ Cuenta creada correctamente");
+      login();
+    })
+    .catch(err => alert("Error al crear cuenta: " + err.message));
 }
 
 function recuperarContrasena() {
@@ -105,7 +118,7 @@ function logout() {
   if (confirm("¿Cerrar sesión?")) auth.signOut().then(() => location.reload());
 }
 
-// ==================== REGISTRAR ====================
+// ==================== REGISTRAR PACIENTE ====================
 document.getElementById('formPaciente').addEventListener('submit', (e) => {
   e.preventDefault();
   if (!currentUser) return alert("Debes iniciar sesión primero");
@@ -134,9 +147,8 @@ function cerrarModal() {
   document.getElementById('successModal').style.display = 'none';
 }
 
-// ==================== BÚSQUEDA, EDICIÓN, DASHBOARD y REPORTES (sin cambios) ====================
-async function buscarPacientes() { /* ... (código completo igual que antes) */ 
-  // [Mantengo todo el código original de buscarPacientes, limpiarFiltrosBusqueda, editarRegistro, etc.]
+// ==================== BÚSQUEDA AVANZADA ====================
+async function buscarPacientes() {
   const fechaInicio = document.getElementById('busquedaFechaInicio').value;
   const fechaFin = document.getElementById('busquedaFechaFin').value;
   const nombre = document.getElementById('busquedaNombre').value.trim().toLowerCase();
@@ -199,7 +211,8 @@ function limpiarFiltrosBusqueda() {
   buscarPacientes();
 }
 
-async function editarRegistro(key) { /* ... */ 
+// ==================== EDICIÓN Y ELIMINACIÓN INDIVIDUAL ====================
+async function editarRegistro(key) {
   const snap = await db.ref('pacientes/' + key).once('value');
   const p = snap.val();
 
@@ -222,7 +235,7 @@ async function editarRegistro(key) { /* ... */
   document.getElementById('editModal').style.display = 'flex';
 }
 
-function guardarEdicion() { /* ... */ 
+function guardarEdicion() {
   const key = document.getElementById('editKey').value;
   db.ref('pacientes/' + key).update({
     fecha: document.getElementById('editFecha').value,
@@ -248,9 +261,10 @@ async function eliminarRegistro(rut, key) {
   buscarPacientes();
 }
 
-async function cargarDashboard() { /* ... */ 
+// ==================== DASHBOARD ====================
+async function cargarDashboard() {
   if (!isAdmin) return;
-  // ... (código completo del dashboard sin cambios)
+
   const inicio = document.getElementById('dashFechaInicio').value;
   const fin = document.getElementById('dashFechaFin').value;
   const usuarioFiltro = document.getElementById('dashUsuario').value.trim().toLowerCase();
@@ -277,8 +291,7 @@ async function cargarDashboard() { /* ... */
   renderUserCharts(userData);
 }
 
-function renderGeneralCharts(data) { /* ... */ 
-  // Código completo del renderGeneralCharts (sin cambios)
+function renderGeneralCharts(data) {
   const byMonth = {};
   data.forEach(p => {
     const mes = p.fecha.substring(0,7);
@@ -323,8 +336,7 @@ function renderGeneralCharts(data) { /* ... */
   });
 }
 
-function renderUserCharts(data) { /* ... */ 
-  // Código completo del renderUserCharts (sin cambios)
+function renderUserCharts(data) {
   const byMonth = {};
   data.forEach(p => {
     const mes = p.fecha.substring(0,7);
@@ -369,8 +381,8 @@ function renderUserCharts(data) { /* ... */
   });
 }
 
-async function generarReporte() { /* ... código completo sin cambios */ 
-  // (Código completo de generarReporte como en la versión anterior)
+// ==================== REPORTES ====================
+async function generarReporte() {
   if (!currentUser) return alert("Inicia sesión primero");
 
   const inicio = document.getElementById('fechaInicio').value;
@@ -448,8 +460,7 @@ async function generarReporte() { /* ... código completo sin cambios */
   container.innerHTML = html;
 }
 
-function imprimirFactura(inicio, fin) { /* ... */ 
-  // Código completo sin cambios
+function imprimirFactura(inicio, fin) {
   const win = window.open('', '_blank');
   let tablaHTML = '';
   let totalBrutoPrint = 0;
@@ -498,7 +509,7 @@ function imprimirFactura(inicio, fin) { /* ... */
   setTimeout(() => win.print(), 600);
 }
 
-function descargarExcel() { /* ... */ 
+function descargarExcel() {
   if (!currentUser) return alert("Inicia sesión primero");
   db.ref('pacientes').once('value')
     .then(snapshot => {
@@ -517,11 +528,9 @@ function descargarExcel() { /* ... */
     });
 }
 
-// ==================== ELIMINACIÓN MASIVA (Actualizada) ====================
-
+// ==================== ELIMINACIÓN MASIVA ====================
 function mostrarInstruccionAuth(email) {
   const consoleUrl = "https://console.firebase.google.com/project/gestor-pacientes-3bced/authentication/users";
-  
   alert(`✅ Se eliminaron todos los registros del usuario: ${email}\n\n` +
         `⚠️ Para eliminar también su cuenta de acceso (Auth), hazlo manualmente:\n\n` +
         `1. Abre: ${consoleUrl}\n` +
@@ -554,16 +563,11 @@ function eliminarRegistrosPorUsuario() {
 
     Promise.all(promises).then(() => {
       alert(`✅ Se eliminaron ${count} registros del usuario ${email}`);
-      
-      // Limpiar campo
       emailInput.value = '';
-      
-      // Actualizar vistas
       mostrarInstruccionAuth(email);
       cargarDashboard();
-      generarReporte();     // Actualiza la tabla de reportes
-      buscarPacientes();    // Actualiza la tabla de búsqueda si está abierta
-      
+      generarReporte();
+      buscarPacientes();
     }).catch(err => alert("Error: " + err.message));
   });
 }
