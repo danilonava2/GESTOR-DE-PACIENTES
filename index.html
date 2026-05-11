@@ -4,23 +4,61 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ClinicaFlow - Gestión de Pacientes</title>
+
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="shortcut icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon-180.png">
+
   <link rel="stylesheet" href="styles.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-  <div class="app">
-    <div class="sidebar">
-      <div class="logo">
-        <h1>ClinicaFlow</h1>
-        <p>Gestión de Pacientes</p>
-      </div>
-      <nav>
-        <a href="#" class="menu-item active" data-section="registrar">📋 Registrar</a>
-        <a href="#" class="menu-item" data-section="buscar">🔍 Buscar Pacientes</a>
-        <a href="#" class="menu-item" data-section="pagos">💰 Gestión de Pagos</a>
-      </nav>
-    </div>
 
-    <div class="main-content">
+  <!-- LOGIN -->
+<div id="authModal" class="modal" style="display:flex;">
+  <div class="modal-content">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="logo-clinicaflow.png" alt="ClinicaFlow" style="max-width: 180px; height: auto;">
+    </div>
+    <p style="color:#555; text-align:center; margin:15px 0 25px 0;">
+      Sistema de Gestión de Pacientes
+    </p>
+      <input type="email" id="emailInput" placeholder="Correo electrónico" style="width:100%;padding:12px;margin:8px 0;">
+      <input type="password" id="passwordInput" placeholder="Contraseña" style="width:100%;padding:12px;margin:8px 0;">
+      <button onclick="login()" class="btn-primary" style="width:100%;margin:12px 0;">🔑 Iniciar Sesión</button>
+      <button onclick="register()" class="btn-secondary" style="width:100%;">📝 Crear Nueva Cuenta</button>
+      <button onclick="recuperarContrasena()" style="background:none;border:none;color:#3b82f6;margin-top:10px;cursor:pointer;">¿Olvidaste tu contraseña?</button>
+    </div>
+  </div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="app" style="display:none;">
+  <div class="sidebar">
+    <div class="logo">
+      <div style="text-align: center; margin-bottom: 10px;">
+        <img src="logo-clinicaflow.png" alt="ClinicaFlow" style="max-width: 180px; height: auto;">
+      </div>
+      <p style="text-align: center; color: #94a3b8; font-size: 14px; margin-top: 8px;">
+        Gestión de Pacientes
+      </p>
+    </div>
+    
+    <nav>
+      <a href="#" class="menu-item active" data-section="registrar"><span>📋 Registrar</span></a>
+      <a href="#" class="menu-item" data-section="buscar"><span>🔍 Buscar</span></a>
+      <a href="#" class="menu-item" data-section="dashboard" id="menu-dashboard" style="display:none;"><span>📊 Dashboard</span></a>
+      <a href="#" class="menu-item" data-section="pagos"><span>💰 Reportes</span></a>
+      <a href="#" onclick="logout()" class="menu-item" style="margin-top:30px;background:#64748b;color:white;">🚪 Cerrar Sesión</a>
+    </nav>
+  </div>
+
+  <div class="main-content">
+
       <!-- REGISTRAR -->
       <div id="section-registrar" class="section active">
         <h2>📋 Nuevo Registro de Paciente</h2>
@@ -29,56 +67,135 @@
             <div class="form-grid">
               <div><label>Fecha</label><input type="date" id="fecha" required></div>
               <div><label>Nombre y Apellido</label><input type="text" id="nombre" required></div>
-              <div><label>RUT</label><input type="text" id="rut" placeholder="12.345.678-9" maxlength="12" required></div>
+              <div><label>RUT</label><input type="text" id="rut" placeholder="12.345.678-9" required></div>
               <div>
                 <label>Previsión</label>
                 <select id="prevision" required>
-                  <option value="">Seleccionar Previsión</option>
+                  <option value="">Seleccionar</option>
                   <option value="FONASA">FONASA</option>
                   <option value="PARTICULAR">PARTICULAR</option>
                   <option value="EXONERADO">EXONERADO</option>
                 </select>
               </div>
-              <div><label>Monto ($)</label><input type="number" id="monto" readonly placeholder="Automático"></div>
+              <div><label>Monto ($)</label><input type="number" id="monto" readonly></div>
             </div>
-            <button type="submit" class="btn-primary">Registrar Paciente</button>
+            <button type="submit" class="btn-primary" style="margin-top:15px;">Registrar Paciente</button>
           </form>
         </div>
       </div>
 
       <!-- BUSCAR -->
       <div id="section-buscar" class="section">
-        <h2>🔍 Buscar Pacientes</h2>
+        <h2>🔍 Búsqueda Avanzada</h2>
         <div class="card">
-          <div class="search-bar">
-            <input type="text" id="busqueda" placeholder="Ingrese RUT (ej: 12.345.678-9)">
-            <button onclick="buscarPacientes()" class="btn-secondary">Buscar</button>
+          <div class="advanced-filters">
+            <div><label>Desde</label><input type="date" id="busquedaFechaInicio"></div>
+            <div><label>Hasta</label><input type="date" id="busquedaFechaFin"></div>
+            <div><label>Nombre</label><input type="text" id="busquedaNombre" placeholder="Nombre"></div>
+            <div><label>RUT</label><input type="text" id="busquedaRut" placeholder="RUT"></div>
+            <div><label>Previsión</label><select id="busquedaPrevision">
+              <option value="">Todas</option>
+              <option value="FONASA">FONASA</option>
+              <option value="PARTICULAR">PARTICULAR</option>
+              <option value="EXONERADO">EXONERADO</option>
+            </select></div>
+            <div><label>Usuario</label><input type="text" id="busquedaUsuario" placeholder="correo@ejemplo.com"></div>
+            <button onclick="buscarPacientes()" class="btn-primary">🔍 Buscar</button>
+            <button onclick="limpiarFiltrosBusqueda()" class="btn-secondary">Limpiar</button>
           </div>
           <div id="resultados"></div>
         </div>
       </div>
 
-      <!-- GESTIÓN DE PAGOS -->
-      <div id="section-pagos" class="section">
-        <h2>💰 Gestión de Pagos</h2>
+      <!-- DASHBOARD -->
+      <div id="section-dashboard" class="section">
+        <h2>📊 Dashboard Administrador</h2>
         <div class="card">
-          <div class="date-range">
-            <input type="date" id="fechaInicio" required>
-            <input type="date" id="fechaFin" required>
+          <div class="advanced-filters">
+            <div><label>Desde</label><input type="date" id="dashFechaInicio"></div>
+            <div><label>Hasta</label><input type="date" id="dashFechaFin"></div>
+            <div><label>Usuario (Correo)</label><input type="text" id="dashUsuario" placeholder="correo@ejemplo.com"></div>
+            <button onclick="cargarDashboard()" class="btn-primary">Actualizar Gráficos</button>
+          </div>
+
+          <h3>📈 Estadísticas Generales (Todos los usuarios)</h3>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(48%, 1fr)); gap:18px; margin:20px 0;">
+            <div style="height: 260px;"><canvas id="generalChart"></canvas></div>
+            <div style="height: 260px;"><canvas id="previsionChart"></canvas></div>
+          </div>
+
+          <h3>👤 Estadísticas por Usuario</h3>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(48%, 1fr)); gap:18px; margin:20px 0;">
+            <div style="height: 260px;"><canvas id="userChart"></canvas></div>
+            <div style="height: 260px;"><canvas id="userPrevisionChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTES -->
+      <div id="section-pagos" class="section">
+        <h2>💰 Reportes y Estadísticas</h2>
+        <div class="card">
+          <div class="advanced-filters">
+            <div><label>Desde</label><input type="date" id="fechaInicio"></div>
+            <div><label>Hasta</label><input type="date" id="fechaFin"></div>
+            <div><label>Nombre</label><input type="text" id="reporteNombre" placeholder="Nombre"></div>
+            <div><label>RUT</label><input type="text" id="reporteRut" placeholder="RUT"></div>
+            <div><label>Previsión</label><select id="filtroPrevision">
+              <option value="">Todas</option>
+              <option value="FONASA">FONASA</option>
+              <option value="PARTICULAR">PARTICULAR</option>
+              <option value="EXONERADO">EXONERADO</option>
+            </select></div>
+            <div><label>Usuario</label><input type="text" id="reporteUsuario" placeholder="correo"></div>
             <button onclick="generarReporte()" class="btn-primary">Generar Reporte</button>
+            <button onclick="descargarExcel()" class="btn-secondary">📥 Excel</button>
           </div>
           <div id="reporteContainer"></div>
+
+          <!-- === ELIMINACIÓN MASIVA (Solo Admin) === -->
+          <div id="adminManagementSection" style="display:none; margin-top:40px;">
+            <h3 style="color:#b91c1c;">🗑️ Eliminar Registros Masivos por Usuario</h3>
+            <div style="background:#fef2f2; padding:25px; border-radius:12px; border:2px solid #e74c3c; max-width:500px;">
+              <label style="display:block;margin-bottom:8px;font-weight:600;">Correo del usuario a eliminar</label>
+              <input type="email" id="deleteRecordsEmail" placeholder="correo@ejemplo.com" style="width:100%; margin-bottom:15px;">
+              <button onclick="eliminarRegistrosPorUsuario()" class="btn-primary" style="width:100%;background:#e74c3c;">🗑️ Eliminar TODOS los registros de este usuario</button>
+            </div>
+            <p style="text-align:center; color:#e74c3c; font-size:0.9em; margin-top:10px;">
+              ⚠️ Esta acción es irreversible y requiere clave de administrador.
+            </p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL -->
+  <!-- MODALES -->
   <div id="successModal" class="modal">
     <div class="modal-content">
       <h2>✅ Registro Exitoso</h2>
       <p>El paciente ha sido registrado correctamente.</p>
-      <button onclick="cerrarModal()" class="btn-primary">OK</button>
+      <button onclick="cerrarModal()" class="btn-primary" style="width:100%;margin-top:15px;">OK</button>
+    </div>
+  </div>
+
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h3>✏️ Editar Registro</h3>
+      <input type="hidden" id="editKey">
+      <label>Fecha</label><input type="date" id="editFecha">
+      <label>Nombre y Apellido</label><input type="text" id="editNombre">
+      <label>RUT</label><input type="text" id="editRut">
+      <label>Previsión</label><select id="editPrevision">
+        <option value="FONASA">FONASA</option>
+        <option value="PARTICULAR">PARTICULAR</option>
+        <option value="EXONERADO">EXONERADO</option>
+      </select>
+      <label>Monto ($)</label><input type="number" id="editMonto">
+      <div style="margin-top:25px; display:flex; gap:10px;">
+        <button onclick="guardarEdicion()" class="btn-primary">Guardar Cambios</button>
+        <button onclick="cerrarEditModal()" class="btn-secondary">Cancelar</button>
+      </div>
     </div>
   </div>
 
